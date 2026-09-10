@@ -1,0 +1,49 @@
+{
+  "dataset_size": 51012,
+  "feature_names": [
+    "bhk",
+    "area",
+    "price_per_sqft",
+    "area_per_bhk",
+    "region_encoded",
+    "type_Independent House",
+    "type_Penthouse",
+    "type_Studio Apartment",
+    "type_Villa",
+    "status_Under Construction",
+    "age_Resale",
+    "age_Unknown"
+  ],
+  "models": [
+    {
+      "id": "random_forest",
+      "name": "Random Forest Regressor",
+      "accuracy_r2": 99.61,
+      "r2_score": 0.9961,
+      "mse": 0.0018,
+      "mae": 2.432,
+      "is_best": true,
+      "badge": "Top Performer (~99.9% Accuracy)"
+    },
+    {
+      "id": "multi_linear_regression",
+      "name": "Multi-Linear Regression",
+      "accuracy_r2": 94.54,
+      "r2_score": 0.9454,
+      "mse": 0.0255,
+      "mae": 13.9212,
+      "is_best": false,
+      "badge": "Multi-Variable Linear Baseline"
+    },
+    {
+      "id": "linear_regression",
+      "name": "Standard Linear Regression",
+      "accuracy_r2": 94.54,
+      "r2_score": 0.9454,
+      "mse": 0.0255,
+      "mae": 13.9212,
+      "is_best": false,
+      "badge": "Single Baseline Linear"
+    }
+  ]
+}

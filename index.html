@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Mumbai Prophecy | Multi-Model AI House Price Predictor</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- Chart.js for Model Comparison -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#131b2e",
+                        "primary-fixed": "#dae2fd",
+                        secondary: "#775a19",
+                        "secondary-container": "#fed488",
+                        surface: "#f6fafe",
+                        "surface-container": "#eaeef2",
+                        "surface-container-high": "#e4e9ed",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#171c1f",
+                        "on-surface-variant": "#45464d",
+                        outline: "#76777d",
+                        "outline-variant": "#c6c6cd"
+                    },
+                    fontFamily: {
+                        serif: ["Noto Serif", "serif"],
+                        sans: ["Manrope", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Manrope', sans-serif; }
+        .font-serif { font-family: 'Noto Serif', serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+        .bg-marble {
+            background-color: #f6fafe;
+            background-image: radial-gradient(circle at 20% 30%, rgba(218, 226, 253, 0.25) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 70%, rgba(255, 222, 165, 0.2) 0%, transparent 50%);
+        }
+        .dark .bg-marble {
+            background-color: #090d16;
+            background-image: radial-gradient(circle at 20% 30%, rgba(30, 41, 59, 0.5) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 70%, rgba(15, 23, 42, 0.5) 0%, transparent 50%);
+        }
+        .step-active {
+            color: #131b2e;
+            border-bottom: 2px solid #131b2e;
+            font-weight: 700;
+        }
+        .dark .step-active {
+            color: #ffffff;
+            border-bottom: 2px solid #ffffff;
+        }
+    </style>
+</head>
+<body class="bg-marble text-on-surface dark:text-slate-100 min-h-screen flex flex-col selection:bg-secondary-container selection:text-slate-900">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 shadow-sm border-b border-slate-200/50 dark:border-slate-800">
+        <div class="max-w-[1920px] mx-auto px-4 md:px-8 py-4 flex justify-between items-center">
+            <!-- Brand -->
+            <div class="flex items-center gap-3">
+                <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="flex items-center gap-2 cursor-pointer" onclick="navigateTo('welcome')">
+                    <div class="w-10 h-10 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl flex items-center justify-center font-serif italic text-xl font-bold shadow-md">M</div>
+                    <div>
+                        <span class="font-serif text-2xl font-bold tracking-tight text-slate-900 dark:text-white block leading-none">Mumbai Prophecy</span>
+                        <span class="text-[10px] tracking-widest uppercase font-semibold text-secondary dark:text-secondary-container block mt-0.5">Multi-Model AI Engine</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Desktop Nav Steps -->
+            <nav class="hidden md:flex items-center gap-8 font-serif text-base">
+                <button onclick="navigateTo('welcome')" id="nav-welcome" class="py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">Welcome</button>
+                <button onclick="navigateTo('market')" id="nav-market" class="py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">Market Selection</button>
+                <button onclick="navigateTo('property')" id="nav-property" class="py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">Price Prediction</button>
+                <button onclick="navigateTo('results')" id="nav-results" class="py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">Results & Models</button>
+            </nav>
+
+            <!-- Actions & Theme Toggle -->
+            <div class="flex items-center gap-3">
+                <button id="themeToggleBtn" onclick="toggleTheme()" class="p-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:scale-105 transition-all">
+                    <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
+                </button>
+                <button onclick="navigateTo('property')" class="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium text-sm rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+                    <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                    <span>Start Prediction</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex max-w-[1920px] w-full mx-auto">
+        <!-- Sidebar Navigation (Desktop) -->
+        <aside class="hidden lg:flex flex-col w-72 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-800 p-6 sticky top-20 h-[calc(100vh-5rem)]">
+            <div class="mb-8 px-3">
+                <h3 class="font-serif italic text-lg text-slate-900 dark:text-white">Valuation Hub</h3>
+                <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">Real-Time ML Pipeline</p>
+            </div>
+            
+            <nav class="space-y-2 flex-1">
+                <button onclick="navigateTo('welcome')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-all text-left">
+                    <span class="material-symbols-outlined text-slate-500">insights</span>
+                    <span>Market Overview</span>
+                </button>
+                <button onclick="navigateTo('property')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-all text-left">
+                    <span class="material-symbols-outlined text-slate-500">calculate</span>
+                    <span>Price Estimator</span>
+                </button>
+                <button onclick="navigateTo('results')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-all text-left">
+                    <span class="material-symbols-outlined text-slate-500">analytics</span>
+                    <span>3-Model Benchmark</span>
+                </button>
+            </nav>
+
+            <!-- Sidebar Info Card -->
+            <div class="mt-auto p-4 rounded-xl bg-slate-900 text-white dark:bg-slate-800/80 border border-slate-700">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-amber-400">verified</span>
+                    <span class="text-xs font-bold uppercase tracking-wider">Active Best Model</span>
+                </div>
+                <p class="text-sm font-semibold text-white">Random Forest Regressor</p>
+                <div class="mt-2 flex items-center justify-between text-xs text-slate-300">
+                    <span>Accuracy:</span>
+                    <span class="font-bold text-emerald-400">99.61%</span>
+                </div>
+                <div class="w-full bg-slate-700 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                    <div class="bg-emerald-400 h-full w-[99.61%]"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto">
+            
+            <!-- SECTION 1: WELCOME VIEW -->
+            <section id="view-welcome" class="space-y-12 max-w-6xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-4">
+                    <div class="lg:col-span-7 space-y-6">
+                        <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-xs font-bold tracking-wider uppercase">
+                            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                            Multi-Model AI Architecture v4.2
+                        </span>
+                        <h1 class="font-serif text-4xl sm:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+                            Predict Mumbai House Prices <br/>
+                            <span class="italic text-slate-600 dark:text-slate-300 font-normal">with Multi-Model Precision.</span>
+                        </h1>
+                        <p class="text-slate-600 dark:text-slate-300 text-lg leading-relaxed font-light">
+                            Our backend evaluates <strong>Linear Regression</strong>, <strong>Multi-Linear Regression</strong>, and <strong>Random Forest Regressor</strong> models simultaneously for every query, compares performance metrics, and delivers predictions powered by the top-performing model.
+                        </p>
+
+                        <div class="flex flex-wrap gap-4 pt-2">
+                            <button onclick="navigateTo('property')" class="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+                                <span>Calculate Property Value</span>
+                                <span class="material-symbols-outlined">arrow_forward</span>
+                            </button>
+                            <button onclick="navigateTo('market')" class="px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+                                Explore Market Modes
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hero Visual Card -->
+                    <div class="lg:col-span-5">
+                        <div class="glass-panel p-8 rounded-2xl space-y-6 relative overflow-hidden">
+                            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-200/30 rounded-full blur-3xl pointer-events-none"></div>
+                            
+                            <h3 class="font-serif italic text-xl text-slate-900 dark:text-white">Real-Time Evaluation Engine</h3>
+                            
+                            <div class="space-y-4">
+                                <!-- Model 1 Card -->
+                                <div class="p-4 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 flex justify-between items-center">
+                                    <div>
+                                        <p class="font-bold text-sm text-slate-900 dark:text-white">Random Forest Regressor</p>
+                                        <p class="text-xs text-slate-500">Non-linear decision tree ensemble</p>
+                                    </div>
+                                    <span class="px-3 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-lg text-xs font-bold">99.61% R²</span>
+                                </div>
+                                <!-- Model 2 Card -->
+                                <div class="p-4 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 flex justify-between items-center">
+                                    <div>
+                                        <p class="font-bold text-sm text-slate-900 dark:text-white">Multi-Linear Regression</p>
+                                        <p class="text-xs text-slate-500">Log-transformed multi-variable model</p>
+                                    </div>
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 rounded-lg text-xs font-bold">94.54% R²</span>
+                                </div>
+                                <!-- Model 3 Card -->
+                                <div class="p-4 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 flex justify-between items-center">
+                                    <div>
+                                        <p class="font-bold text-sm text-slate-900 dark:text-white">Linear Regression</p>
+                                        <p class="text-xs text-slate-500">Standard ordinary least squares</p>
+                                    </div>
+                                    <span class="px-3 py-1 bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold">94.54% R²</span>
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-slate-200/60 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500">
+                                <span>Dataset Records: 51,012</span>
+                                <span>Micro-Markets: 228</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Bar -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6">
+                    <div class="glass-panel p-6 rounded-2xl text-center space-y-1">
+                        <span class="text-3xl md:text-4xl font-bold font-serif text-slate-900 dark:text-white">51,000+</span>
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-medium">Cleaned Transactions</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl text-center space-y-1">
+                        <span class="text-3xl md:text-4xl font-bold font-serif text-slate-900 dark:text-white">228</span>
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-medium">Mumbai Micro-Markets</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl text-center space-y-1">
+                        <span class="text-3xl md:text-4xl font-bold font-serif text-emerald-600 dark:text-emerald-400">99.61%</span>
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-medium">Best Model Accuracy</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl text-center space-y-1">
+                        <span class="text-3xl md:text-4xl font-bold font-serif text-amber-600 dark:text-amber-400">3 Models</span>
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-medium">Evaluated Live</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: MARKET SELECTION VIEW -->
+            <section id="view-market" class="hidden space-y-8 max-w-5xl mx-auto pt-4">
+                <div class="space-y-3">
+                    <span class="text-xs font-bold uppercase tracking-widest text-secondary dark:text-secondary-container block">Market Selection</span>
+                    <h2 class="font-serif text-4xl font-bold text-slate-900 dark:text-white">Choose Your Valuation Engine</h2>
+                    <p class="text-slate-600 dark:text-slate-300 font-light text-lg">Select how you want our backend algorithms to evaluate property prices in Mumbai.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                    <!-- Engine 1: Recommended Multi-Model -->
+                    <div onclick="navigateTo('property')" class="glass-panel p-8 rounded-2xl space-y-6 cursor-pointer hover:border-slate-900 dark:hover:border-white transition-all group relative overflow-hidden">
+                        <div class="w-12 h-12 bg-amber-500 text-white rounded-xl flex items-center justify-center shadow-lg">
+                            <span class="material-symbols-outlined">auto_awesome</span>
+                        </div>
+                        <div class="space-y-2">
+                            <span class="text-[10px] font-bold tracking-widest uppercase text-amber-600 dark:text-amber-400">Recommended</span>
+                            <h3 class="font-serif text-2xl font-bold text-slate-900 dark:text-white group-hover:text-amber-600 transition-colors">Multi-Model AI Engine</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-light">
+                                Runs Linear Regression, Multi-Linear Regression, and Random Forest simultaneously, choosing the 99.61% accuracy model automatically.
+                            </p>
+                        </div>
+                        <div class="flex items-center text-xs font-bold text-slate-900 dark:text-white gap-2">
+                            <span>Launch Engine</span>
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </div>
+                    </div>
+
+                    <!-- Engine 2: Random Forest Direct -->
+                    <div onclick="navigateTo('property')" class="glass-panel p-8 rounded-2xl space-y-6 cursor-pointer hover:border-slate-900 dark:hover:border-white transition-all group">
+                        <div class="w-12 h-12 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl flex items-center justify-center shadow-lg">
+                            <span class="material-symbols-outlined">forest</span>
+                        </div>
+                        <div class="space-y-2">
+                            <span class="text-[10px] font-bold tracking-widest uppercase text-slate-500">High Precision</span>
+                            <h3 class="font-serif text-2xl font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors">Random Forest Model</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-light">
+                                Directly uses the non-linear decision tree ensemble (~99.61% accuracy) for instant property valuation.
+                            </p>
+                        </div>
+                        <div class="flex items-center text-xs font-bold text-slate-900 dark:text-white gap-2">
+                            <span>Launch Forest Model</span>
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </div>
+                    </div>
+
+                    <!-- Engine 3: Linear Comparison -->
+                    <div onclick="navigateTo('property')" class="glass-panel p-8 rounded-2xl space-y-6 cursor-pointer hover:border-slate-900 dark:hover:border-white transition-all group">
+                        <div class="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg">
+                            <span class="material-symbols-outlined">show_chart</span>
+                        </div>
+                        <div class="space-y-2">
+                            <span class="text-[10px] font-bold tracking-widest uppercase text-slate-500">Baseline</span>
+                            <h3 class="font-serif text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">Linear Baseline Engine</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-light">
+                                Evaluates property price using standard and multi-variable linear regression models (~94.54% accuracy).
+                            </p>
+                        </div>
+                        <div class="flex items-center text-xs font-bold text-slate-900 dark:text-white gap-2">
+                            <span>Launch Linear Engine</span>
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: PROPERTY DETAILS INPUT FORM -->
+            <section id="view-property" class="hidden space-y-8 max-w-4xl mx-auto pt-4">
+                <div class="space-y-3">
+                    <span class="text-xs font-bold uppercase tracking-widest text-secondary dark:text-secondary-container block">Property Parameters</span>
+                    <h2 class="font-serif text-4xl font-bold text-slate-900 dark:text-white">Enter Property Details</h2>
+                    <p class="text-slate-600 dark:text-slate-300 font-light text-lg">Input your property specs to trigger backend model comparison & price estimation.</p>
+                </div>
+
+                <div class="glass-panel p-8 md:p-12 rounded-3xl space-y-8">
+                    <form id="predictionForm" onsubmit="handleFormSubmit(event)" class="space-y-8">
+                        
+                        <!-- Region Input with Autocomplete -->
+                        <div class="space-y-2 relative">
+                            <label class="text-xs font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 block">
+                                Region / Micro-Market <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">location_on</span>
+                                <input type="text" id="regionInput" required autocomplete="off" placeholder="Type or select region e.g. Bandra West, Juhu, Worli..."
+                                       oninput="filterRegions()" onfocus="showRegionList()"
+                                       class="w-full bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 dark:text-white text-base focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none transition-all"/>
+                            </div>
+                            <!-- Search Dropdown List -->
+                            <div id="regionDropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-60 overflow-y-auto z-30 divide-y divide-slate-100 dark:divide-slate-800">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- BHK Selection & Area Input -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- BHK Selection -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 block">Bedrooms (BHK)</label>
+                                <div class="grid grid-cols-5 gap-2">
+                                    <button type="button" onclick="selectBhk(1)" class="bhk-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition-all active" data-bhk="1">1</button>
+                                    <button type="button" onclick="selectBhk(2)" class="bhk-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition-all" data-bhk="2">2</button>
+                                    <button type="button" onclick="selectBhk(3)" class="bhk-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition-all" data-bhk="3">3</button>
+                                    <button type="button" onclick="selectBhk(4)" class="bhk-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition-all" data-bhk="4">4</button>
+                                    <button type="button" onclick="selectBhk(5)" class="bhk-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition-all" data-bhk="5">5+</button>
+                                </div>
+                                <input type="hidden" id="bhkValue" value="1"/>
+                            </div>
+
+                            <!-- Area Input (Sq.Ft) -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300">Carpet Area (Sq.Ft)</label>
+                                    <span id="areaDisplay" class="font-bold text-slate-900 dark:text-white text-sm">850 sq.ft</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <input type="range" id="areaSlider" min="200" max="6000" step="50" value="850" oninput="syncAreaInput(this.value)" class="flex-1 accent-slate-900 dark:accent-white cursor-pointer"/>
+                                    <input type="number" id="areaNumber" min="100" max="20000" value="850" oninput="syncAreaSlider(this.value)" class="w-24 bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 rounded-xl py-2 px-3 text-slate-900 dark:text-white text-sm font-bold text-center outline-none"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Property Type Cards -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 block">Property Type</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                <div onclick="selectType('Apartment')" class="type-card p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-center cursor-pointer hover:border-slate-900 dark:hover:border-white transition-all active-type" data-type="Apartment">
+                                    <span class="material-symbols-outlined text-2xl mb-1 block">apartment</span>
+                                    <span class="text-xs font-bold block">Apartment</span>
+                                </div>
+                                <div onclick="selectType('Independent House')" class="type-card p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-center cursor-pointer hover:border-slate-900 dark:hover:border-white transition-all" data-type="Independent House">
+                                    <span class="material-symbols-outlined text-2xl mb-1 block">home</span>
+                                    <span class="text-xs font-bold block">Independent</span>
+                                </div>
+                                <div onclick="selectType('Penthouse')" class="type-card p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-center cursor-pointer hover:border-slate-900 dark:hover:border-white transition-all" data-type="Penthouse">
+                                    <span class="material-symbols-outlined text-2xl mb-1 block">domain</span>
+                                    <span class="text-xs font-bold block">Penthouse</span>
+                                </div>
+                                <div onclick="selectType('Villa')" class="type-card p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-center cursor-pointer hover:border-slate-900 dark:hover:border-white transition-all" data-type="Villa">
+                                    <span class="material-symbols-outlined text-2xl mb-1 block">villa</span>
+                                    <span class="text-xs font-bold block">Villa</span>
+                                </div>
+                                <div onclick="selectType('Studio Apartment')" class="type-card p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-center cursor-pointer hover:border-slate-900 dark:hover:border-white transition-all" data-type="Studio Apartment">
+                                    <span class="material-symbols-outlined text-2xl mb-1 block">single_bed</span>
+                                    <span class="text-xs font-bold block">Studio</span>
+                                </div>
+                            </div>
+                            <input type="hidden" id="propertyTypeValue" value="Apartment"/>
+                        </div>
+
+                        <!-- Construction Status & Age -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Construction Status -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 block">Construction Status</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button type="button" onclick="selectStatus('Ready to Move')" class="status-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-900 hover:text-white transition-all active-status" data-status="Ready to Move">Ready to Move</button>
+                                    <button type="button" onclick="selectStatus('Under Construction')" class="status-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-900 hover:text-white transition-all" data-status="Under Construction">Under Construction</button>
+                                </div>
+                                <input type="hidden" id="statusValue" value="Ready to Move"/>
+                            </div>
+
+                            <!-- Property Age -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 block">Property Age</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button type="button" onclick="selectAge('Resale')" class="age-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-900 hover:text-white transition-all active-age" data-age="Resale">Resale</button>
+                                    <button type="button" onclick="selectAge('New Property')" class="age-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-900 hover:text-white transition-all" data-age="New Property">New Property</button>
+                                    <button type="button" onclick="selectAge('Unknown')" class="age-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-900 hover:text-white transition-all" data-age="Unknown">Unknown</button>
+                                </div>
+                                <input type="hidden" id="ageValue" value="Resale"/>
+                            </div>
+                        </div>
+
+                        <!-- Submit CTA Button -->
+                        <div class="pt-4">
+                            <button type="submit" id="submitBtn" class="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-base rounded-xl shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3">
+                                <span class="material-symbols-outlined">auto_awesome</span>
+                                <span>Evaluate 3 Models & Predict Valuation</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- SECTION 4: PREDICTION & MODEL COMPARISON RESULTS -->
+            <section id="view-results" class="hidden space-y-12 max-w-5xl mx-auto pt-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                    <div class="space-y-2">
+                        <span class="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                            Prophecy Delivered & Verified
+                        </span>
+                        <h2 class="font-serif text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white">Valuation & Model Breakdown</h2>
+                        <p id="resultLocationSummary" class="text-slate-600 dark:text-slate-300 font-light text-base">Results for 2 BHK Apartment in Bandra West</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="navigateTo('property')" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm rounded-xl hover:bg-slate-200 transition-all flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">refresh</span>
+                            <span>Recalculate</span>
+                        </button>
+                        <button onclick="window.print()" class="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-sm rounded-xl hover:shadow-lg transition-all flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">print</span>
+                            <span>Export Report</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Winning Model Monolith Card -->
+                <div class="glass-panel p-8 md:p-12 rounded-3xl relative overflow-hidden space-y-6">
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <span class="px-4 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-xs font-bold tracking-wider uppercase flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">workspace_premium</span>
+                            Top Performer Selected: <span id="bestModelBadge">Random Forest Regressor (99.61% Accuracy)</span>
+                        </span>
+                        <span class="text-xs text-slate-500 font-medium">Model ID: RF-100T-REG</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
+                        <div class="md:col-span-8 space-y-2">
+                            <p class="text-xs uppercase tracking-widest text-slate-500 font-semibold">Estimated Market Fair Value</p>
+                            <h1 id="predictedPriceText" class="font-serif text-5xl sm:text-7xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                                ₹ 2.45 Cr
+                            </h1>
+                            <p id="valuationRangeText" class="text-slate-600 dark:text-slate-300 text-sm font-medium">
+                                Fair Valuation Range: ₹ 2.33 Cr - ₹ 2.57 Cr
+                            </p>
+                        </div>
+                        <div class="md:col-span-4 p-4 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 text-center space-y-1">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 block">Unit Rate</span>
+                            <span id="pricePerSqftText" class="text-2xl font-bold font-serif text-slate-900 dark:text-white block">₹ 20,416 / sq.ft</span>
+                            <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">High Demand Region</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3-Model Side-by-Side Comparison Section -->
+                <div class="space-y-6">
+                    <div class="space-y-1">
+                        <h3 class="font-serif text-2xl font-bold text-slate-900 dark:text-white">Sequential 3-Model Comparison</h3>
+                        <p class="text-slate-600 dark:text-slate-300 text-sm font-light">Every query runs all 3 models sequentially to verify accuracy before selecting the final answer.</p>
+                    </div>
+
+                    <div id="modelsComparisonGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Interactive Chart.js Visualizer -->
+                <div class="glass-panel p-8 rounded-3xl space-y-4">
+                    <h3 class="font-serif text-xl font-bold text-slate-900 dark:text-white">Predicted Price & Accuracy Visualizer</h3>
+                    <div class="w-full h-72">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        let allRegions = [];
+        let selectedBhk = 1;
+        let selectedType = 'Apartment';
+        let selectedStatus = 'Ready to Move';
+        let selectedAge = 'Resale';
+        let comparisonChartInstance = null;
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchOptions();
+            // Default styling setup for BHK buttons
+            selectBhk(1);
+        });
+
+        // Fetch options from backend
+        async function fetchOptions() {
+            try {
+                const res = await fetch('/api/options');
+                const data = await res.json();
+                if (data.regions) {
+                    allRegions = data.regions;
+                    if (allRegions.length > 0) {
+                        document.getElementById('regionInput').value = allRegions[0];
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load backend options:", err);
+            }
+        }
+
+        // Navigation between views
+        function navigateTo(step) {
+            ['welcome', 'market', 'property', 'results'].forEach(s => {
+                document.getElementById(`view-${s}`).classList.add('hidden');
+                const navBtn = document.getElementById(`nav-${s}`);
+                if (navBtn) navBtn.classList.remove('step-active');
+            });
+
+            document.getElementById(`view-${step}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${step}`);
+            if (activeNav) activeNav.classList.add('step-active');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Region dropdown search logic
+        function filterRegions() {
+            const input = document.getElementById('regionInput').value.toLowerCase();
+            const dropdown = document.getElementById('regionDropdown');
+            dropdown.innerHTML = '';
+            
+            const filtered = allRegions.filter(r => r.toLowerCase().includes(input)).slice(0, 10);
+            if (filtered.length === 0) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            filtered.forEach(r => {
+                const item = document.createElement('div');
+                item.className = 'px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-white font-medium';
+                item.textContent = r;
+                item.onclick = () => {
+                    document.getElementById('regionInput').value = r;
+                    dropdown.classList.add('hidden');
+                };
+                dropdown.appendChild(item);
+            });
+            dropdown.classList.remove('hidden');
+        }
+
+        function showRegionList() {
+            filterRegions();
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#regionInput') && !e.target.closest('#regionDropdown')) {
+                document.getElementById('regionDropdown').classList.add('hidden');
+            }
+        });
+
+        // Form controls handling
+        function selectBhk(bhk) {
+            selectedBhk = bhk;
+            document.getElementById('bhkValue').value = bhk;
+            document.querySelectorAll('.bhk-btn').forEach(btn => {
+                if (parseInt(btn.dataset.bhk) === bhk) {
+                    btn.className = 'bhk-btn py-3 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-sm font-bold transition-all shadow-md';
+                } else {
+                    btn.className = 'bhk-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all';
+                }
+            });
+        }
+
+        function syncAreaInput(val) {
+            document.getElementById('areaNumber').value = val;
+            document.getElementById('areaDisplay').textContent = `${val} sq.ft`;
+        }
+
+        function syncAreaSlider(val) {
+            document.getElementById('areaSlider').value = val;
+            document.getElementById('areaDisplay').textContent = `${val} sq.ft`;
+        }
+
+        function selectType(type) {
+            selectedType = type;
+            document.getElementById('propertyTypeValue').value = type;
+            document.querySelectorAll('.type-card').forEach(card => {
+                if (card.dataset.type === type) {
+                    card.className = 'type-card p-3 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-center cursor-pointer transition-all shadow-md';
+                } else {
+                    card.className = 'type-card p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-center cursor-pointer hover:border-slate-900 dark:hover:border-white transition-all';
+                }
+            });
+        }
+
+        function selectStatus(status) {
+            selectedStatus = status;
+            document.getElementById('statusValue').value = status;
+            document.querySelectorAll('.status-btn').forEach(btn => {
+                if (btn.dataset.status === status) {
+                    btn.className = 'status-btn py-3 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-bold transition-all shadow-md';
+                } else {
+                    btn.className = 'status-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition-all';
+                }
+            });
+        }
+
+        function selectAge(age) {
+            selectedAge = age;
+            document.getElementById('ageValue').value = age;
+            document.querySelectorAll('.age-btn').forEach(btn => {
+                if (btn.dataset.age === age) {
+                    btn.className = 'age-btn py-3 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-bold transition-all shadow-md';
+                } else {
+                    btn.className = 'age-btn py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition-all';
+                }
+            });
+        }
+
+        // Form Submission to API
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Evaluating All 3 Models...</span>
+            `;
+
+            const payload = {
+                region: document.getElementById('regionInput').value,
+                bhk: selectedBhk,
+                area: parseFloat(document.getElementById('areaNumber').value),
+                property_type: selectedType,
+                status: selectedStatus,
+                age: selectedAge
+            };
+
+            try {
+                const res = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    renderResults(data);
+                    navigateTo('results');
+                } else {
+                    alert('Prediction Error: ' + (data.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error("API Call Error:", err);
+                alert("Could not connect to backend server.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+                    <span class="material-symbols-outlined">auto_awesome</span>
+                    <span>Evaluate 3 Models & Predict Valuation</span>
+                `;
+            }
+        }
+
+        // Render Results View
+        function renderResults(data) {
+            const best = data.best_model;
+            const prop = data.property_summary;
+
+            document.getElementById('resultLocationSummary').textContent = 
+                `Results for ${prop.bhk} BHK ${prop.property_type} in ${prop.region} (${prop.area_sqft} sq.ft)`;
+
+            document.getElementById('predictedPriceText').textContent = best.formatted_price;
+            document.getElementById('valuationRangeText').textContent = `Fair Valuation Range: ${best.valuation_range_formatted}`;
+            document.getElementById('pricePerSqftText').textContent = `₹ ${best.price_per_sqft.toLocaleString()} / sq.ft`;
+            document.getElementById('bestModelBadge').textContent = `${best.name} (${best.accuracy_percentage}% Accuracy)`;
+
+            // Render 3 Model Comparison Cards
+            const grid = document.getElementById('modelsComparisonGrid');
+            grid.innerHTML = '';
+
+            const comparison = data.all_models_comparison || [];
+            comparison.forEach(m => {
+                const isSelected = m.is_best;
+                const card = document.createElement('div');
+                card.className = `p-6 rounded-2xl border transition-all ${
+                    isSelected 
+                    ? 'bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-500 shadow-lg ring-2 ring-emerald-500/20' 
+                    : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                            isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }">
+                            ${isSelected ? 'SELECTED ANSWER' : 'EVALUATED'}
+                        </span>
+                        <span class="text-xs font-bold ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}">
+                            ${m.accuracy_percentage}% R²
+                        </span>
+                    </div>
+
+                    <h4 class="font-serif text-lg font-bold text-slate-900 dark:text-white mb-1">${m.name}</h4>
+                    <p class="text-2xl font-extrabold font-serif text-slate-900 dark:text-white mb-4">${m.predicted_price_formatted}</p>
+
+                    <div class="space-y-2 border-t border-slate-200/60 dark:border-slate-700/60 pt-3 text-xs">
+                        <div class="flex justify-between text-slate-500">
+                            <span>Mean Squared Error (MSE):</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-300">${m.mse}</span>
+                        </div>
+                        <div class="flex justify-between text-slate-500">
+                            <span>Mean Absolute Error (MAE):</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-300">₹${m.mae}L</span>
+                        </div>
+                        <div class="flex justify-between text-slate-500">
+                            <span>Rate / sq.ft:</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-300">₹${m.price_per_sqft.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // Render Chart
+            renderChart(comparison);
+        }
+
+        // Render Chart.js Visualization
+        function renderChart(comparison) {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            if (comparisonChartInstance) {
+                comparisonChartInstance.destroy();
+            }
+
+            const labels = comparison.map(m => m.name);
+            const prices = comparison.map(m => m.predicted_price_lakhs);
+            const accuracies = comparison.map(m => m.accuracy_percentage);
+
+            comparisonChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Predicted Price (Lakhs)',
+                            data: prices,
+                            backgroundColor: ['rgba(16, 185, 129, 0.85)', 'rgba(59, 130, 246, 0.85)', 'rgba(100, 116, 139, 0.85)'],
+                            borderRadius: 8,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Model Accuracy (%)',
+                            data: accuracies,
+                            type: 'line',
+                            borderColor: '#f59e0b',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#f59e0b',
+                            pointRadius: 6,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Price (₹ Lakhs)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            min: 80,
+                            max: 100,
+                            title: { display: true, text: 'Accuracy (%)' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Theme Toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                icon.textContent = 'dark_mode';
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                icon.textContent = 'light_mode';
+            }
+        }
+    </script>
+</body>
+</html>
