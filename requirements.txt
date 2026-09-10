@@ -1,6 +1,5 @@
-streamlit
-joblib
-scikit-learn
-numpy
 flask
 flask-cors
+joblib
+scikit-learn
+gunicorn
