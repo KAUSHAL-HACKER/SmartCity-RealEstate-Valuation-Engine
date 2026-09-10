@@ -2,3 +2,4 @@ streamlit
 joblib
 scikit-learn
 numpy
+flask
